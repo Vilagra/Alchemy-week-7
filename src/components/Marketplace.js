@@ -37,6 +37,7 @@ const sampleData = [
 const [data, updateData] = useState(sampleData);
 const [dataFetched, updateFetched] = useState(false);
 
+
 async function getAllNFTs() {
     const ethers = require("ethers");
     //After adding your Hardhat network to your metamask, this code will get providers and signers
@@ -45,23 +46,33 @@ async function getAllNFTs() {
     //Pull the deployed contract instance
     let contract = new ethers.Contract(MarketplaceJSON.address, MarketplaceJSON.abi, signer)
     //create an NFT Token
-    let transaction = await contract.getAllNFTs()
+    const baseURL = `https://eth-goerli.g.alchemy.com/v2/oVj3zZLZOBySMhJtte_TO0ruw-186OeC/getNFTs/`;
+    var requestOptions = {
+      method: 'GET'
+    };
+    const fetchURL = `${baseURL}?owner=${MarketplaceJSON.address}`;
+ 
+    let nfts = await fetch(fetchURL, requestOptions).then(data => data.json())
 
+    if (nfts) {
+        console.log("nfts:", nfts.ownedNfts)
+      }
     //Fetch all the details of every NFT from the contract and display
-    const items = await Promise.all(transaction.map(async i => {
-        const tokenURI = await contract.tokenURI(i.tokenId);
-        let meta = await axios.get(tokenURI);
-        meta = meta.data;
+    const items = await Promise.all(nfts.ownedNfts.map(i => {
+        //const tokenURI = await contract.tokenURI(i.tokenId);
+        //let meta = await axios.get(tokenURI);
+        //meta = meta.data;
 
-        let price = ethers.utils.formatUnits(i.price.toString(), 'ether');
+        //let price = ethers.utils.formatUnits(i.price.toString(), 'ether');
+        let price = 0.01
         let item = {
             price,
-            tokenId: i.tokenId.toNumber(),
-            seller: i.seller,
-            owner: i.owner,
-            image: meta.image,
-            name: meta.name,
-            description: meta.description,
+            tokenId: i.id.tokenId,
+            seller: i.contract.address,
+            owner: i.contract.address,
+            image: i.metadata.image,
+            name: i.title,
+            description: i.description,
         }
         return item;
     }))
